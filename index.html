@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="PocketDesk"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='%23050810'/><text y='130' x='96' text-anchor='middle' font-size='120'>🖥</text></svg>"/>
+<title>PocketDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #050810;
+  --s1:       #0c1220;
+  --s2:       #111827;
+  --s3:       #1a2235;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.1);
+  --accent:   #3b82f6;
+  --accent2:  #8b5cf6;
+  --green:    #10b981;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --text:     #f1f5f9;
+  --muted:    #475569;
+  --muted2:   #64748b;
+  --bar:      44px;
+  --dock:     72px;
+  --radius:   14px;
+  --font:     'Outfit', sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Wallpaper ─────────────────────────────────────────────────────────── */
+#wallpaper {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 85%, rgba(59,130,246,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 85% 15%, rgba(139,92,246,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(16,185,129,0.03) 0%, transparent 50%),
+    var(--bg);
+}
+#wallpaper::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── Menu bar ──────────────────────────────────────────────────────────── */
+#bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--bar);
+  background: rgba(5,8,16,0.88);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 2px;
+  z-index: 9000;
+}
+.bar-logo {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--text);
+  padding: 4px 10px;
+  display: flex; align-items: center; gap: 7px;
+  margin-right: 6px;
+}
+.bar-logo-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 8px var(--accent);
+}
+.bar-btn {
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 500;
+  color: var(--muted2); cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.bar-btn:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+.bar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.bar-indicator {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-family: var(--mono);
+  color: var(--muted); padding: 3px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+.bar-indicator .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 5px var(--green); }
+#bar-clock { font-family: var(--mono); font-size: 12px; color: var(--text); min-width: 44px; text-align: right; }
+
+/* ── Desktop ───────────────────────────────────────────────────────────── */
+#desktop {
+  position: fixed;
+  top: var(--bar); left: 0; right: 0;
+  bottom: var(--dock);
+  z-index: 1; overflow: hidden;
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────── */
+#empty {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; pointer-events: none;
+  opacity: 1; transition: opacity 0.3s;
+}
+#empty.hidden { opacity: 0; }
+#empty h1 {
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 700; letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--text) 30%, var(--muted2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+#empty p { font-size: 13px; color: var(--muted); font-family: var(--mono); }
+.setup-hint {
+  margin-top: 24px;
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: 12px; padding: 16px 24px;
+  max-width: 420px; text-align: center;
+  pointer-events: all;
+}
+.setup-hint h3 { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+.setup-hint p { font-size: 12px; color: var(--muted2); line-height: 1.7; }
+.setup-hint strong { color: var(--text); }
+
+/* ── Windows ───────────────────────────────────────────────────────────── */
+.win {
+  position: absolute;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  animation: winIn 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  min-width: 280px; min-height: 200px;
+}
+.win.focused {
+  border-color: rgba(59,130,246,0.2);
+  box-shadow: 0 28px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(59,130,246,0.12);
+}
+@keyframes winIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.win-bar {
+  height: 38px; flex-shrink: 0;
+  background: rgba(12,18,32,0.98);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 12px; gap: 8px;
+  cursor: move; user-select: none;
+  -webkit-user-select: none;
+}
+.win-traffic { display: flex; gap: 6px; }
+.win-traffic button {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: none; cursor: pointer;
+  transition: filter 0.15s; padding: 0;
+}
+.win-traffic button:hover { filter: brightness(1.25); }
+.tc { background: #ff5f57; }
+.tm { background: #febc2e; }
+.tx { background: #28c840; }
+.win-title {
+  flex: 1; text-align: center;
+  font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.45); letter-spacing: 0.03em;
+  pointer-events: none;
+}
+.win-body { flex: 1; overflow: hidden; position: relative; }
+.win-resize {
+  position: absolute; bottom: 0; right: 0;
+  width: 20px; height: 20px; cursor: se-resize;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+  padding: 4px; opacity: 0.25;
+}
+.win-resize:hover { opacity: 0.7; }
+
+/* ── App contents ──────────────────────────────────────────────────────── */
+.app-frame {
+  width: 100%; height: 100%;
+  border: none; display: block;
+  background: #000;
+}
+
+/* Browser app */
+.browser-wrap {
+  display: flex; flex-direction: column;
+  height: 100%; background: var(--s2);
+}
+.browser-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.browser-bar input {
+  flex: 1; background: var(--s3);
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 6px 12px; font-size: 13px;
+  color: var(--text); font-family: var(--mono);
+  outline: none;
+}
+.browser-bar input:focus { border-color: var(--accent); }
+.browser-bar button {
+  background: var(--s3); border: 1px solid var(--border);
+  color: var(--muted2); border-radius: 8px;
+  padding: 6px 12px; font-size: 13px; cursor: pointer;
+  transition: all 0.15s;
+}
+.browser-bar button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.browser-iframe { flex: 1; width: 100%; border: none; }
+
+/* Notes app */
+.notes-wrap { display: flex; height: 100%; }
+.notes-sidebar {
+  width: 160px; flex-shrink: 0;
+  background: var(--s1); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.notes-sidebar-header {
+  padding: 12px 14px 8px;
+  font-size: 11px; font-weight: 600;
+  color: var(--amber); text-transform: uppercase; letter-spacing: 0.1em;
+}
+.note-item {
+  padding: 9px 14px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.note-item:hover, .note-item.active { background: rgba(59,130,246,0.08); }
+.note-item-title { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-item-preview { font-size: 10px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notes-add {
+  padding: 10px 14px; color: var(--accent); font-size: 12px;
+  cursor: pointer; margin-top: auto;
+  border-top: 1px solid var(--border);
+}
+.notes-add:hover { background: rgba(59,130,246,0.08); }
+.notes-editor { flex: 1; display: flex; flex-direction: column; }
+.notes-editor input {
+  padding: 14px 16px;
+  background: transparent; border: none; border-bottom: 1px solid var(--border);
+  color: var(--text); font-size: 16px; font-weight: 600;
+  font-family: var(--font); outline: none;
+}
+.notes-editor textarea {
+  flex: 1; padding: 14px 16px; background: transparent;
+  border: none; resize: none; outline: none;
+  color: rgba(255,255,255,0.75); font-size: 13px;
+  line-height: 1.8; font-family: var(--font);
+}
+
+/* Terminal app */
+.term-wrap {
+  height: 100%; background: #0a0f0a;
+  display: flex; flex-direction: column;
+  padding: 14px; overflow: hidden;
+  font-family: var(--mono);
+}
+.term-output {
+  flex: 1; overflow-y: auto; font-size: 12px;
+  line-height: 1.7; color: #a3e635;
+  margin-bottom: 8px;
+}
+.term-output .line { display: block; }
+.term-output .line.cmd { color: #7dd3fc; }
+.term-output .line.err { color: #f87171; }
+.term-output .line.info { color: #94a3b8; }
+.term-input-row { display: flex; align-items: center; gap: 8px; }
+.term-prompt { color: #10b981; font-size: 12px; white-space: nowrap; }
+.term-input {
+  flex: 1; background: transparent; border: none;
+  color: #a3e635; font-size: 12px;
+  font-family: var(--mono); outline: none; caret-color: #a3e635;
+}
+
+/* Calculator */
+.calc-wrap {
+  height: 100%; background: #000;
+  display: flex; flex-direction: column;
+  padding: 12px; gap: 8px;
+}
+.calc-display {
+  flex: 1; display: flex; align-items: flex-end;
+  justify-content: flex-end; padding: 8px;
+  color: #fff; font-size: 52px; font-weight: 200;
+  letter-spacing: -2px; overflow: hidden;
+}
+.calc-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; flex: 3;
+}
+.calc-btn {
+  border: none; border-radius: 12px;
+  font-size: 20px; font-weight: 400;
+  cursor: pointer; transition: filter 0.1s;
+  font-family: var(--font);
+}
+.calc-btn:hover { filter: brightness(1.2); }
+.calc-btn:active { filter: brightness(0.85); }
+.cb-gray { background: #333; color: #fff; }
+.cb-light { background: #a5a5a5; color: #000; }
+.cb-orange { background: #ff9f0a; color: #fff; }
+.cb-orange.active { background: #fff; color: #ff9f0a; }
+.cb-wide { grid-column: span 2; justify-content: flex-start; padding-left: 24px; display: flex; align-items: center; }
+
+/* Files app */
+.files-wrap {
+  height: 100%; background: var(--s2);
+  display: flex; flex-direction: column;
+}
+.files-toolbar {
+  padding: 10px 14px; background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--muted2);
+}
+.files-grid {
+  flex: 1; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px; padding: 16px; align-content: start;
+}
+.file-item {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px; cursor: pointer;
+  padding: 10px 6px; border-radius: 10px;
+  transition: background 0.15s;
+}
+.file-item:hover { background: rgba(59,130,246,0.1); }
+.file-icon { font-size: 36px; }
+.file-name { font-size: 11px; color: var(--text); text-align: center; word-break: break-word; line-height: 1.3; }
+
+/* Music */
+.music-wrap {
+  height: 100%; background: linear-gradient(160deg, #1a0533, #050810);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+  padding: 24px;
+}
+.music-art {
+  width: 140px; height: 140px; border-radius: 16px;
+  background: linear-gradient(135deg, #7c3aed, #3b82f6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64px;
+  box-shadow: 0 20px 60px rgba(124,58,237,0.4);
+}
+.music-title { font-size: 18px; font-weight: 700; text-align: center; }
+.music-artist { font-size: 13px; color: var(--muted2); }
+.music-progress { width: 100%; }
+.music-bar {
+  width: 100%; height: 4px; background: rgba(255,255,255,0.1);
+  border-radius: 2px; margin: 8px 0; cursor: pointer;
+}
+.music-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 1s linear; }
+.music-times { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.music-controls { display: flex; align-items: center; gap: 24px; }
+.mc-btn {
+  background: none; border: none; color: var(--text);
+  font-size: 22px; cursor: pointer; transition: transform 0.15s, color 0.15s;
+  padding: 8px;
+}
+.mc-btn:hover { transform: scale(1.15); color: var(--accent); }
+.mc-play {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--accent); display: flex; align-items: center;
+  justify-content: center; font-size: 22px; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(59,130,246,0.4);
+  transition: transform 0.15s;
+}
+.mc-play:hover { transform: scale(1.08); }
+
+/* Settings */
+.settings-wrap {
+  height: 100%; background: var(--s1); overflow-y: auto;
+}
+.settings-section { padding: 16px 0; }
+.settings-header { padding: 6px 16px 10px; font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; }
+.settings-row {
+  padding: 12px 16px; display: flex; align-items: center;
+  justify-content: space-between; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.12s;
+}
+.settings-row:hover { background: rgba(255,255,255,0.03); }
+.settings-row-label { font-size: 14px; color: var(--text); }
+.settings-row-value { font-size: 13px; color: var(--muted2); }
+.toggle {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: var(--muted); border: none; cursor: pointer;
+  position: relative; transition: background 0.2s;
+}
+.toggle.on { background: var(--green); }
+.toggle::after {
+  content: ''; position: absolute;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px;
+  transition: left 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.toggle.on::after { left: 21px; }
+
+/* Clock */
+.clock-wrap {
+  height: 100%; background: var(--s1);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px;
+}
+.clock-time { font-size: 72px; font-weight: 200; letter-spacing: -4px; color: var(--text); font-variant-numeric: tabular-nums; }
+.clock-date { font-size: 16px; color: var(--muted2); font-weight: 400; }
+.clock-secs { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 8px; }
+
+/* ── Dock ──────────────────────────────────────────────────────────────── */
+#dock {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--dock);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  background: rgba(5,8,16,0.88);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  border-top: 1px solid var(--border);
+  padding: 0 20px;
+  z-index: 9000;
+}
+.dock-group {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 8px;
+}
+.dock-sep { width: 1px; height: 40px; background: var(--border); margin: 0 6px; }
+.dock-item {
+  width: 48px; height: 48px; border-radius: 13px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 24px; cursor: pointer;
+  position: relative; transition: transform 0.15s;
+}
+.dock-item:hover { transform: scale(1.2) translateY(-8px); }
+.dock-item .dock-tip {
+  position: absolute; bottom: calc(100% + 12px);
+  background: rgba(0,0,0,0.85); color: var(--text);
+  font-size: 11px; padding: 4px 8px; border-radius: 6px;
+  white-space: nowrap; opacity: 0; pointer-events: none;
+  transition: opacity 0.15s; font-family: var(--mono);
+}
+.dock-item:hover .dock-tip { opacity: 1; }
+.dock-item.open::after {
+  content: ''; position: absolute; bottom: -6px;
+  left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ── Context menu ──────────────────────────────────────────────────────── */
+#ctx {
+  position: fixed; z-index: 9999;
+  background: rgba(15,21,32,0.96);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 160px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  display: none;
+  animation: ctxIn 0.12s ease;
+}
+@keyframes ctxIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+.ctx-item {
+  padding: 8px 12px; border-radius: 6px;
+  font-size: 13px; cursor: pointer; color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+  transition: background 0.1s;
+}
+.ctx-item:hover { background: rgba(59,130,246,0.15); }
+.ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ── Wallpaper picker ──────────────────────────────────────────────────── */
+#wp-picker {
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center;
+}
+#wp-picker.open { display: flex; }
+.wp-panel {
+  background: var(--s1); border: 1px solid var(--border2);
+  border-radius: 18px; padding: 24px; width: 480px;
+}
+.wp-panel h3 { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+.wp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.wp-swatch {
+  width: 100%; aspect-ratio: 16/9; border-radius: 8px;
+  cursor: pointer; border: 2px solid transparent;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.wp-swatch:hover { transform: scale(1.05); border-color: var(--accent); }
+.wp-close {
+  width: 100%; padding: 10px; background: var(--s3);
+  border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-size: 14px; cursor: pointer;
+  font-family: var(--font);
+}
+
+/* ── Mobile phone view (when NOT on external display) ─────────────────── */
+#phone-view {
+  position: fixed; inset: 0; z-index: 99999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px; padding: 32px; text-align: center;
+}
+#phone-view.hidden { display: none; }
+#phone-view h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+#phone-view p { font-size: 14px; color: var(--muted2); line-height: 1.7; max-width: 300px; }
+.connect-steps {
+  background: var(--s2); border: 1px solid var(--border2);
+  border-radius: 16px; padding: 20px 24px;
+  text-align: left; width: 100%; max-width: 320px;
+}
+.connect-steps h3 { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
+.step {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 14px; font-size: 13px; line-height: 1.5;
+}
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3);
+  color: var(--accent); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-text { color: var(--muted2); }
+.step-text strong { color: var(--text); }
+.demo-btn {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 12px; padding: 12px 28px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  font-family: var(--font); width: 100%; max-width: 320px;
+  transition: filter 0.15s;
+}
+.demo-btn:hover { filter: brightness(1.1); }
+.demo-note { font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- Phone view — shown when NOT on external display -->
+<div id="phone-view">
+  <div style="font-size:56px">🖥️</div>
+  <h1>PocketDesk</h1>
+  <p>Connect your iPhone to a monitor to get a full desktop experience.</p>
+
+  <div class="connect-steps">
+    <h3>How to connect</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Get a <strong>Lightning → HDMI</strong> or <strong>USB-C → HDMI</strong> adapter ($10–$20)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Plug your iPhone into the adapter, connect HDMI to your monitor</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Open <strong>Safari</strong> on your iPhone and visit this page — the desktop launches on your monitor</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Pair a <strong>Bluetooth keyboard & mouse</strong> to your iPhone via Settings → Bluetooth</div>
+    </div>
+  </div>
+
+  <button class="demo-btn" onclick="enterDesktop()">Preview Desktop Mode</button>
+  <div class="demo-note">* Full external display detection is automatic when connected</div>
+</div>
+
+<!-- Wallpaper -->
+<div id="wallpaper"></div>
+
+<!-- Menu Bar -->
+<div id="bar">
+  <div class="bar-logo"><div class="bar-logo-dot"></div>PocketDesk</div>
+  <div class="bar-btn" onclick="launchApp('browser')">Safari</div>
+  <div class="bar-btn" onclick="launchApp('files')">Files</div>
+  <div class="bar-btn" onclick="launchApp('notes')">Notes</div>
+  <div class="bar-btn" onclick="launchApp('terminal')">Terminal</div>
+  <div class="bar-right">
+    <div class="bar-indicator"><div class="dot"></div><span id="bar-conn">iPhone Connected</span></div>
+    <div id="bar-clock">--:--</div>
+  </div>
+</div>
+
+<!-- Desktop -->
+<div id="desktop" oncontextmenu="showCtx(event)"></div>
+
+<!-- Empty State -->
+<div id="empty">
+  <h1>PocketDesk</h1>
+  <p>your iPhone, now a computer</p>
+  <div class="setup-hint">
+    <h3>🖱️ Mouse & Keyboard Ready</h3>
+    <p>
+      Pair your Bluetooth keyboard & mouse:<br/>
+      <strong>iPhone Settings → Bluetooth → pair device</strong><br/><br/>
+      Then use them just like a real PC — click apps in the dock, drag windows, type normally.
+    </p>
+  </div>
+</div>
+
+<!-- Dock -->
+<div id="dock">
+  <div class="dock-group">
+    <div class="dock-item" id="di-browser" onclick="launchApp('browser')" title="browser">🌐<div class="dock-tip">Browser</div></div>
+    <div class="dock-item" id="di-files" onclick="launchApp('files')">📁<div class="dock-tip">Files</div></div>
+    <div class="dock-item" id="di-notes" onclick="launchApp('notes')">📝<div class="dock-tip">Notes</div></div>
+    <div class="dock-item" id="di-music" onclick="launchApp('music')">🎵<div class="dock-tip">Music</div></div>
+  </div>
+  <div class="dock-sep"></div>
+  <div class="dock-group">
+    <div class="dock-item" id="di-calc" onclick="launchApp('calc')">🔢<div class="dock-tip">Calculator</div></div>
+    <div class="dock-item" id="di-terminal" onclick="launchApp('terminal')">⬛<div class="dock-tip">Terminal</div></div>
+    <div class="dock-item" id="di-clock" onclick="launchApp('clock')">🕐<div class="dock-tip">Clock</div></div>
+    <div class="dock-item" id="di-settings" onclick="launchApp('settings')">⚙️<div class="dock-tip">Settings</div></div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx">
+  <div class="ctx-item" onclick="pickWallpaper()">🖼️ Change Wallpaper</div>
+  <div class="ctx-item" onclick="launchApp('browser')">🌐 New Browser Window</div>
+  <div class="ctx-item" onclick="launchApp('notes')">📝 New Note</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="closeAllWindows()">✕ Close All Windows</div>
+</div>
+
+<!-- Wallpaper Picker -->
+<div id="wp-picker">
+  <div class="wp-panel">
+    <h3>Choose Wallpaper</h3>
+    <div class="wp-grid" id="wp-grid"></div>
+    <button class="wp-close" onclick="closeWpPicker()">Done</button>
+  </div>
+</div>
+
+<script>
+// ── Register service worker ──────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// ── External display detection ───────────────────────────────────────────────
+function checkDisplay() {
+  // On iOS, when connected via HDMI adapter, the window dimensions
+  // reflect the phone screen but screen dimensions reflect the monitor.
+  // We use this delta to detect external display.
+  const isExternal = window.screen.width > window.innerWidth * 1.2
+    || window.screen.height > window.innerHeight * 1.2
+    || window.innerWidth >= 900;
+  return isExternal;
+}
+
+function enterDesktop() {
+  document.getElementById('phone-view').classList.add('hidden');
+  document.getElementById('empty').classList.remove('hidden');
+}
+
+// Check on load and on resize
+function checkAndRoute() {
+  if (checkDisplay()) enterDesktop();
+}
+window.addEventListener('resize', checkAndRoute);
+checkAndRoute();
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function tick() {
+  const now = new Date();
+  document.getElementById('bar-clock').textContent =
+    now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  // Update open clock windows
+  document.querySelectorAll('.clock-time').forEach(el => {
+    el.textContent = now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  });
+  document.querySelectorAll('.clock-date').forEach(el => {
+    el.textContent = now.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
+  });
+  document.querySelectorAll('.clock-secs').forEach(el => {
+    el.textContent = now.toLocaleTimeString([],{second:'2-digit'}).replace(/.*:/,'seconds  ');
+  });
+}
+tick(); setInterval(tick, 1000);
+
+// ── Window manager ───────────────────────────────────────────────────────────
+const wins = {};
+let maxZ = 100;
+let wDrag = null, wResize = null;
+let wCount = 0;
+
+const WIN_DEFAULTS = {
+  browser:  { title:'🌐  Browser',    w:760, h:520, x:60,  y:40  },
+  files:    { title:'📁  Files',      w:640, h:460, x:100, y:60  },
+  notes:    { title:'📝  Notes',      w:580, h:460, x:140, y:80  },
+  music:    { title:'🎵  Music',      w:320, h:460, x:180, y:60  },
+  calc:     { title:'🔢  Calculator', w:320, h:480, x:220, y:80  },
+  terminal: { title:'⬛  Terminal',   w:600, h:380, x:160, y:100 },
+  clock:    { title:'🕐  Clock',      w:300, h:240, x:200, y:120 },
+  settings: { title:'⚙️  Settings',  w:480, h:500, x:240, y:60  },
+};
+
+function launchApp(id) {
+  hideCtx();
+  if (wins[id]) { focusWin(id); return; }
+  const cfg = WIN_DEFAULTS[id];
+  const off = (wCount++ % 8) * 24;
+  createWin(id, cfg.title, cfg.w, cfg.h, cfg.x+off, cfg.y+off, buildApp(id));
+}
+
+function createWin(id, title, w, h, x, y, content) {
+  const el = document.createElement('div');
+  el.className = 'win focused';
+  el.id = `w-${id}`;
+  el.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${++maxZ}`;
+  el.innerHTML = `
+    <div class="win-bar" onmousedown="startDrag(event,'${id}')">
+      <div class="win-traffic">
+        <button class="tc" onclick="closeWin('${id}')"></button>
+        <button class="tm" onclick="minWin('${id}')"></button>
+        <button class="tx" onclick="maxWin('${id}')"></button>
+      </div>
+      <div class="win-title">${title}</div>
+      <div style="width:54px"></div>
+    </div>
+    <div class="win-body" id="wb-${id}">${content}</div>
+    <div class="win-resize" onmousedown="startResize(event,'${id}')">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M9 1L1 9M9 5L5 9" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>`;
+  document.getElementById('desktop').appendChild(el);
+  wins[id] = el;
+  document.getElementById('empty').classList.add('hidden');
+  markDock(id, true);
+  postBuild(id);
+}
+
+function closeWin(id) {
+  wins[id]?.remove(); delete wins[id];
+  markDock(id, false);
+  if (!Object.keys(wins).length) document.getElementById('empty').classList.remove('hidden');
+}
+function minWin(id) {
+  const w = wins[id]; if (!w) return;
+  w.style.display = w.style.display === 'none' ? 'flex' : 'none';
+}
+function maxWin(id) {
+  const w = wins[id]; if (!w) return;
+  const d = document.getElementById('desktop');
+  w.style.left = '0'; w.style.top = '0';
+  w.style.width = d.clientWidth + 'px';
+  w.style.height = d.clientHeight + 'px';
+  w.style.display = 'flex';
+}
+function focusWin(id) {
+  Object.values(wins).forEach(w => w.classList.remove('focused'));
+  const w = wins[id]; if (!w) return;
+  w.classList.add('focused');
+  w.style.zIndex = ++maxZ;
+  w.style.display = 'flex';
+}
+function closeAllWindows() {
+  Object.keys(wins).forEach(closeWin);
+  hideCtx();
+}
+function markDock(id, on) {
+  document.getElementById(`di-${id}`)?.classList.toggle('open', on);
+}
+
+// ── Drag & Resize ────────────────────────────────────────────────────────────
+function startDrag(e, id) {
+  e.preventDefault(); focusWin(id);
+  const w = wins[id];
+  wDrag = { id, sx: e.clientX - parseInt(w.style.left), sy: e.clientY - parseInt(w.style.top) };
+}
+function startResize(e, id) {
+  e.preventDefault(); e.stopPropagation(); focusWin(id);
+  const w = wins[id];
+  wResize = { id, sx: e.clientX, sy: e.clientY, ow: parseInt(w.style.width), oh: parseInt(w.style.height) };
+}
+document.addEventListener('mousemove', e => {
+  if (wDrag) {
+    const w = wins[wDrag.id];
+    if (w) { w.style.left=(e.clientX-wDrag.sx)+'px'; w.style.top=Math.max(0,e.clientY-wDrag.sy)+'px'; }
+  }
+  if (wResize) {
+    const w = wins[wResize.id];
+    if (w) {
+      w.style.width = Math.max(280, wResize.ow+e.clientX-wResize.sx)+'px';
+      w.style.height = Math.max(200, wResize.oh+e.clientY-wResize.sy)+'px';
+    }
+  }
+});
+document.addEventListener('mouseup', () => { wDrag=null; wResize=null; });
+document.addEventListener('mousedown', e => {
+  hideCtx();
+  // Focus clicked window
+  Object.entries(wins).forEach(([id,w]) => { if (w.contains(e.target)) focusWin(id); });
+});
+
+// ── App builders ─────────────────────────────────────────────────────────────
+function buildApp(id) {
+  switch(id) {
+    case 'browser': return buildBrowser();
+    case 'files': return buildFiles();
+    case 'notes': return buildNotes();
+    case 'music': return buildMusic();
+    case 'calc': return buildCalc();
+    case 'terminal': return buildTerminal();
+    case 'clock': return buildClock();
+    case 'settings': return buildSettings();
+    default: return '<div style="padding:20px;color:var(--muted)">App not found</div>';
+  }
+}
+
+function buildBrowser() {
+  return `<div class="browser-wrap">
+    <div class="browser-bar">
+      <button onclick="browserNav('back')">←</button>
+      <button onclick="browserNav('fwd')">→</button>
+      <button onclick="browserNav('reload')">↺</button>
+      <input id="browser-url" type="url" value="https://www.google.com" placeholder="Enter URL..." onkeydown="if(event.key==='Enter')browserGo()"/>
+      <button onclick="browserGo()">Go</button>
+    </div>
+    <iframe class="browser-iframe" id="browser-iframe" src="https://www.google.com" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+  </div>`;
+}
+function browserGo() {
+  let url = document.getElementById('browser-url').value.trim();
+  if (!url.startsWith('http')) url = 'https://' + url;
+  document.getElementById('browser-url').value = url;
+  document.getElementById('browser-iframe').src = url;
+}
+function browserNav(action) {
+  const iframe = document.getElementById('browser-iframe');
+  if (!iframe) return;
+  if (action === 'back') { try { iframe.contentWindow.history.back(); } catch(e) {} }
+  if (action === 'fwd')  { try { iframe.contentWindow.history.forward(); } catch(e) {} }
+  if (action === 'reload') { iframe.src = iframe.src; }
+}
+
+function buildFiles() {
+  const items = [
+    {icon:'📄',name:'Resume.pdf'},{icon:'🖼️',name:'Screenshot.png'},
+    {icon:'📊',name:'Budget.xlsx'},{icon:'🎬',name:'Video.mp4'},
+    {icon:'📁',name:'Projects'},{icon:'📁',name:'Downloads'},
+    {icon:'🎵',name:'Podcast.mp3'},{icon:'📝',name:'Notes.txt'},
+    {icon:'🗂️',name:'Archive.zip'},{icon:'📁',name:'Photos'},
+    {icon:'📱',name:'Backup'},{icon:'📄',name:'Contract.docx'},
+  ];
+  return `<div class="files-wrap">
+    <div class="files-toolbar">📁 iCloud Drive &nbsp;›&nbsp; All Files <span style="margin-left:auto">12 items</span></div>
+    <div class="files-grid">
+      ${items.map(i=>`<div class="file-item" onclick="openFile('${i.name}')"><div class="file-icon">${i.icon}</div><div class="file-name">${i.name}</div></div>`).join('')}
+    </div>
+  </div>`;
+}
+function openFile(name) {
+  if (name.endsWith('.pdf') || name.endsWith('.docx')) {
+    window.open('https://drive.google.com', '_blank');
+  }
+}
+
+// Notes state
+let notes = [{id:1,title:'Welcome to PocketDesk',body:'This is your desktop from your iPhone!\n\nConnect a monitor via HDMI adapter and pair a Bluetooth keyboard and mouse.\n\nEnjoy your desktop. 🖥️'},{id:2,title:'Shopping list',body:'- HDMI adapter\n- Bluetooth keyboard\n- Bluetooth mouse'},{id:3,title:'Ideas',body:''}];
+let activeNote = 1;
+
+function buildNotes() {
+  return `<div class="notes-wrap">
+    <div class="notes-sidebar">
+      <div class="notes-sidebar-header">Notes</div>
+      <div id="notes-list"></div>
+      <div class="notes-add" onclick="newNote()">+ New Note</div>
+    </div>
+    <div class="notes-editor" id="notes-editor"></div>
+  </div>`;
+}
+function postBuild(id) {
+  if (id === 'notes') renderNotes();
+  if (id === 'calc') setupCalc();
+  if (id === 'terminal') setupTerminal();
+  if (id === 'music') setupMusic();
+  if (id === 'settings') setupSettings();
+}
+function renderNotes() {
+  const list = document.getElementById('notes-list'); if (!list) return;
+  list.innerHTML = notes.map(n=>`
+    <div class="note-item ${n.id===activeNote?'active':''}" onclick="selectNote(${n.id})">
+      <div class="note-item-title">${n.title||'Untitled'}</div>
+      <div class="note-item-preview">${n.body.slice(0,40)||'No content'}</div>
+    </div>`).join('');
+  renderNoteEditor();
+}
+function renderNoteEditor() {
+  const ed = document.getElementById('notes-editor'); if (!ed) return;
+  const n = notes.find(x=>x.id===activeNote);
+  if (!n) return;
+  ed.innerHTML = `
+    <input value="${n.title.replace(/"/g,'&quot;')}" oninput="updateNote(${n.id},'title',this.value)" placeholder="Title"/>
+    <textarea oninput="updateNote(${n.id},'body',this.value)" placeholder="Write something...">${n.body}</textarea>`;
+}
+function selectNote(id) { activeNote=id; renderNotes(); }
+function newNote() { const id=Date.now(); notes.push({id,title:'',body:''}); activeNote=id; renderNotes(); }
+function updateNote(id,field,val) { const n=notes.find(x=>x.id===id); if(n){n[field]=val;} document.querySelectorAll('.note-item').forEach((el,i)=>{el.querySelector('.note-item-title').textContent=notes[i].title||'Untitled';el.querySelector('.note-item-preview').textContent=notes[i].body.slice(0,40)||'No content';}); }
+
+function buildMusic() {
+  return `<div class="music-wrap">
+    <div class="music-art">🎵</div>
+    <div>
+      <div class="music-title" id="m-title">No Track Playing</div>
+      <div class="music-artist" id="m-artist">Open Music app on iPhone</div>
+    </div>
+    <div class="music-progress" style="width:80%">
+      <div class="music-bar"><div class="music-bar-fill" id="m-bar" style="width:0%"></div></div>
+      <div class="music-times"><span id="m-cur">0:00</span><span id="m-dur">0:00</span></div>
+    </div>
+    <div class="music-controls">
+      <button class="mc-btn" onclick="musicPrev()">⏮</button>
+      <div class="mc-play" id="m-play" onclick="togglePlay()">▶</div>
+      <button class="mc-btn" onclick="musicNext()">⏭</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;line-height:1.7;margin-top:4px">
+      Controls your iPhone's music<br/>via Media Session API
+    </div>
+  </div>`;
+}
+let playing = false, musicPos = 0, musicTick = null;
+const tracks = [{title:'Chill Vibes',artist:'Lo-fi Station',dur:187},{title:'Focus Mode',artist:'Ambient Works',dur:243},{title:'Late Night',artist:'City Beats',dur:156}];
+let trackIdx = 0;
+function setupMusic() {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => { playing=true; updatePlay(); });
+    navigator.mediaSession.setActionHandler('pause', () => { playing=false; updatePlay(); });
+    navigator.mediaSession.setActionHandler('previoustrack', musicPrev);
+    navigator.mediaSession.setActionHandler('nexttrack', musicNext);
+  }
+  renderTrack();
+}
+function renderTrack() {
+  const t = tracks[trackIdx];
+  const title = document.getElementById('m-title'); if (title) title.textContent = t.title;
+  const artist = document.getElementById('m-artist'); if (artist) artist.textContent = t.artist;
+  const dur = document.getElementById('m-dur'); if (dur) dur.textContent = fmt(t.dur);
+  musicPos = 0; updateProgress();
+}
+function togglePlay() { playing=!playing; updatePlay(); }
+function updatePlay() {
+  const btn = document.getElementById('m-play'); if (btn) btn.textContent = playing ? '⏸' : '▶';
+  if (playing) { musicTick = setInterval(()=>{ musicPos = Math.min(musicPos+1, tracks[trackIdx].dur); updateProgress(); if(musicPos>=tracks[trackIdx].dur) musicNext(); },1000); }
+  else { clearInterval(musicTick); }
+}
+function updateProgress() {
+  const t = tracks[trackIdx];
+  const bar = document.getElementById('m-bar'); if (bar) bar.style.width = (musicPos/t.dur*100)+'%';
+  const cur = document.getElementById('m-cur'); if (cur) cur.textContent = fmt(musicPos);
+}
+function musicPrev() { clearInterval(musicTick); playing=false; trackIdx=(trackIdx-1+tracks.length)%tracks.length; renderTrack(); }
+function musicNext() { clearInterval(musicTick); playing=false; trackIdx=(trackIdx+1)%tracks.length; renderTrack(); }
+function fmt(s) { return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60; }
+
+function buildCalc() {
+  return `<div class="calc-wrap">
+    <div class="calc-display" id="c-disp">0</div>
+    <div class="calc-grid" id="c-grid"></div>
+  </div>`;
+}
+let cVal='0', cPrev=null, cOp=null, cReset=false;
+function setupCalc() {
+  const btns = [
+    {l:'AC',cls:'cb-light',a:()=>{cVal='0';cPrev=null;cOp=null;cReset=false;cUpd();}},
+    {l:'+/−',cls:'cb-light',a:()=>{cVal=String(-parseFloat(cVal));cUpd();}},
+    {l:'%',cls:'cb-light',a:()=>{cVal=String(parseFloat(cVal)/100);cUpd();}},
+    {l:'÷',cls:'cb-orange',op:'÷'},
+    {l:'7',cls:'cb-gray',n:7},{l:'8',cls:'cb-gray',n:8},{l:'9',cls:'cb-gray',n:9},
+    {l:'×',cls:'cb-orange',op:'×'},
+    {l:'4',cls:'cb-gray',n:4},{l:'5',cls:'cb-gray',n:5},{l:'6',cls:'cb-gray',n:6},
+    {l:'−',cls:'cb-orange',op:'−'},
+    {l:'1',cls:'cb-gray',n:1},{l:'2',cls:'cb-gray',n:2},{l:'3',cls:'cb-gray',n:3},
+    {l:'+',cls:'cb-orange',op:'+'},
+    {l:'0',cls:'cb-gray cb-wide',n:0},
+    {l:'.',cls:'cb-gray',a:()=>{if(!cVal.includes('.')){cVal+='.';cUpd();}}},
+    {l:'=',cls:'cb-orange',a:()=>{
+      if(cOp&&cPrev!==null){
+        const a=parseFloat(cPrev),b=parseFloat(cVal);
+        let r;
+        if(cOp==='+')r=a+b;else if(cOp==='−')r=a-b;else if(cOp==='×')r=a*b;else if(cOp==='÷')r=b?a/b:0;
+        cVal=String(parseFloat(r.toFixed(10)));
+        cPrev=null;cOp=null;cReset=true;cUpd();
+      }
+    }},
+  ];
+  const grid = document.getElementById('c-grid'); if (!grid) return;
+  btns.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'calc-btn ' + b.cls;
+    btn.textContent = b.l;
+    if (b.n !== undefined) btn.onclick = () => { if(cReset){cVal=String(b.n);cReset=false;}else{cVal=cVal==='0'?String(b.n):cVal+b.n;} cUpd(); };
+    else if (b.op) btn.onclick = () => { cPrev=cVal; cOp=b.op; cReset=true; document.querySelectorAll('.cb-orange').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); };
+    else if (b.a) btn.onclick = () => { document.querySelectorAll('.cb-orange').forEach(x=>x.classList.remove('active')); b.a(); };
+    grid.appendChild(btn);
+  });
+}
+function cUpd() { const d=document.getElementById('c-disp'); if(d) d.textContent=cVal; }
+
+// Terminal
+const termHistory = ['Welcome to PocketDesk Terminal v1.0', 'Type "help" for available commands.', ''];
+function buildTerminal() {
+  return `<div class="term-wrap">
+    <div class="term-output" id="t-out"></div>
+    <div class="term-input-row">
+      <span class="term-prompt">pocketdesk:~$</span>
+      <input class="term-input" id="t-in" autofocus spellcheck="false" autocomplete="off" onkeydown="termKey(event)"/>
+    </div>
+  </div>`;
+}
+function setupTerminal() { renderTerm(); }
+function renderTerm() {
+  const out = document.getElementById('t-out'); if (!out) return;
+  out.innerHTML = termHistory.map(l=>
+    `<span class="line ${l.startsWith('$')?'cmd':l.startsWith('Error')?'err':l.startsWith('Welcome')||l.startsWith('Type')?'info':''}">${l}</span>`
+  ).join('');
+  out.scrollTop = out.scrollHeight;
+}
+function termKey(e) {
+  if (e.key !== 'Enter') return;
+  const input = document.getElementById('t-in');
+  const cmd = input.value.trim(); input.value = '';
+  if (!cmd) return;
+  termHistory.push('$ ' + cmd);
+  const res = termExec(cmd);
+  res.forEach(l => termHistory.push(l));
+  termHistory.push('');
+  renderTerm();
+}
+function termExec(cmd) {
+  const c = cmd.toLowerCase().split(' ')[0];
+  const cmds = {
+    help: ()=>['Commands: help, ls, pwd, date, echo, clear, whoami, uname, neofetch'],
+    ls: ()=>['Documents  Downloads  Desktop  Music  Pictures  Videos'],
+    pwd: ()=>['/home/iphone'],
+    date: ()=>[new Date().toString()],
+    whoami: ()=>['iphone-user'],
+    clear: ()=>{ termHistory.length=0; return []; },
+    uname: ()=>['PocketDesk 1.0 (iOS-WebKit)'],
+    echo: ()=>[cmd.slice(5)],
+    neofetch: ()=>[
+      '       📱        pocketdesk@iphone',
+      '     /|  |\\      OS: PocketDesk 1.0',
+      '    / |  | \\     Host: iPhone',
+      '   /  |  |  \\    Shell: Safari WebKit',
+      '  /   \\  /   \\   Resolution: '+screen.width+'x'+screen.height,
+      ' /     \\/     \\  Memory: WebKit Sandbox',
+    ],
+  };
+  return cmds[c] ? cmds[c]() : ['Error: command not found: '+cmd+'. Type "help".'];
+}
+
+function buildClock() {
+  const now = new Date();
+  return `<div class="clock-wrap">
+    <div class="clock-time">${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+    <div class="clock-date">${now.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}</div>
+    <div class="clock-secs">seconds  ${now.getSeconds().toString().padStart(2,'0')}</div>
+  </div>`;
+}
+
+function buildSettings() {
+  return `<div class="settings-wrap">
+    <div class="settings-section">
+      <div class="settings-header">Display</div>
+      <div class="settings-row"><span class="settings-row-label">Dark Mode</span><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+      <div class="settings-row"><span class="settings-row-label">Resolution</span><span class="settings-row-value">${screen.width}×${screen.height}</span></div>
+      <div class="settings-row"><span class="settings-row-label">Refresh Rate</span><span class="settings-row-value">60 Hz</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-header">Input</div>
+      <div class="settings-row"><span class="settings-row-label">Mouse Connected</span><span class="settings-row-value" id="s-mouse">Checking...</span></div>
+      <div class="settings-row"><span class="settings-row-label">Keyboard Connected</span><span class="settings-row-value" id="s-kbd">Checking...</span></div>
+      <div class="settings-row"><span class="settings-row-label">Pointer Speed</span><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-header">System</div>
+      <div class="settings-row"><span class="settings-row-label">Browser</span><span class="settings-row-value">Safari WebKit</span></div>
+      <div class="settings-row"><span class="settings-row-label">PWA Installed</span><span class="settings-row-value" id="s-pwa">Checking...</span></div>
+      <div class="settings-row"><span class="settings-row-label">Offline Mode</span><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-header">About</div>
+      <div class="settings-row"><span class="settings-row-label">PocketDesk</span><span class="settings-row-value">v1.0.0</span></div>
+      <div class="settings-row"><span class="settings-row-label">Platform</span><span class="settings-row-value">${navigator.platform||'iOS'}</span></div>
+    </div>
+  </div>`;
+}
+function setupSettings() {
+  // Detect pointer
+  setTimeout(() => {
+    const m = document.getElementById('s-mouse');
+    const k = document.getElementById('s-kbd');
+    const p = document.getElementById('s-pwa');
+    if (m) m.textContent = window.matchMedia('(pointer:fine)').matches ? '✅ Yes' : '⚠️ Not detected';
+    if (k) k.textContent = navigator.keyboard ? '✅ Yes' : '⚠️ Not detected';
+    if (p) p.textContent = window.matchMedia('(display-mode:fullscreen)').matches ? '✅ Yes' : 'Not installed';
+  }, 100);
+}
+
+// ── Context menu ─────────────────────────────────────────────────────────────
+function showCtx(e) {
+  e.preventDefault();
+  const ctx = document.getElementById('ctx');
+  ctx.style.display = 'block';
+  ctx.style.left = Math.min(e.clientX, window.innerWidth-180) + 'px';
+  ctx.style.top  = Math.min(e.clientY, window.innerHeight-160) + 'px';
+}
+function hideCtx() { document.getElementById('ctx').style.display = 'none'; }
+document.addEventListener('click', hideCtx);
+
+// ── Wallpaper picker ─────────────────────────────────────────────────────────
+const wallpapers = [
+  'radial-gradient(ellipse at 20% 80%,rgba(59,130,246,.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(139,92,246,.15) 0%,transparent 60%),#050810',
+  'radial-gradient(ellipse at 50% 0%,rgba(16,185,129,.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(59,130,246,.12) 0%,transparent 50%),#030d08',
+  'radial-gradient(ellipse at 0% 50%,rgba(239,68,68,.15) 0%,transparent 60%),radial-gradient(ellipse at 100% 50%,rgba(245,158,11,.1) 0%,transparent 50%),#0d0505',
+  'radial-gradient(ellipse at 50% 50%,rgba(139,92,246,.2) 0%,transparent 70%),#06050d',
+  'radial-gradient(ellipse at 30% 30%,rgba(6,182,212,.15) 0%,transparent 60%),radial-gradient(ellipse at 70% 70%,rgba(16,185,129,.1) 0%,transparent 50%),#030d0d',
+  'linear-gradient(135deg,#0a0a0a 0%,#1a1a2e 50%,#0a0a0a 100%)',
+  'radial-gradient(ellipse at 50% 100%,rgba(251,191,36,.12) 0%,transparent 60%),radial-gradient(ellipse at 50% 0%,rgba(239,68,68,.08) 0%,transparent 50%),#0d0a03',
+  'linear-gradient(160deg,#050810 0%,#0c1a30 50%,#050810 100%)',
+];
+function pickWallpaper() {
+  const picker = document.getElementById('wp-picker');
+  const grid = document.getElementById('wp-grid');
+  grid.innerHTML = wallpapers.map((w,i)=>
+    `<div class="wp-swatch" style="background:${w}" onclick="setWallpaper(${i})"></div>`
+  ).join('');
+  picker.classList.add('open');
+  hideCtx();
+}
+function setWallpaper(i) {
+  document.getElementById('wallpaper').style.background = wallpapers[i];
+  closeWpPicker();
+}
+function closeWpPicker() { document.getElementById('wp-picker').classList.remove('open'); }
+
+// ── Keyboard shortcuts ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey)) {
+    if (e.key==='b') { e.preventDefault(); launchApp('browser'); }
+    if (e.key==='n') { e.preventDefault(); launchApp('notes'); }
+    if (e.key==='t') { e.preventDefault(); launchApp('terminal'); }
+    if (e.key==='w') {
+      e.preventDefault();
+      const focused = Object.entries(wins).find(([,w])=>w.classList.contains('focused'));
+      if (focused) closeWin(focused[0]);
+    }
+  }
+});
+
+// ── Auto launch on external display ──────────────────────────────────────────
+if (checkDisplay()) {
+  setTimeout(() => launchApp('browser'), 400);
+  setTimeout(() => launchApp('notes'), 600);
+}
+</script>
+</body>
+</html>
