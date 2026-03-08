@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🖥️ PocketDesk
 
 > **A full desktop experience from your iPhone — no Mac, no PC, no iPad required.**
@@ -202,3 +203,7 @@ If this helped you or someone you know, drop a ⭐ on GitHub. It helps more peop
 <div align="center">
   <sub>Made with 📱 + ❤️ for people who deserve a desktop</sub>
 </div>
+=======
+# pocketdesk
+practice files
+>>>>>>> 39b6ef6cc5ca3264b935bc0069ab137889e94d4e
